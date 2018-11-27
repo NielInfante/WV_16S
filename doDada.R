@@ -8,8 +8,8 @@ setwd(baseDir)
 
 # List of where the files are
 
-fnFs <- sort(list.files('~/projects/Anderson/outdir/noN', pattern="_R1.fastq.gz", full.names = TRUE))
-fnRs <- sort(list.files('~/projects/Anderson/outdir/noN', pattern="_R2.fastq.gz", full.names = TRUE))
+fnFs <- sort(list.files('~/', pattern="_R1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files('~/', pattern="_R2.fastq.gz", full.names = TRUE))
 
 
 # Read the meta
@@ -17,11 +17,16 @@ meta <- read.table('meta', header=T, sep="\t", stringsAsFactors = F)
 sample.names <- meta$Sample
 
 # Take a look at some quality
-plotQualityProfile(fnFs[1:2])
-plotQualityProfile(fnRs[1:2])
+
+png('pics/forward_quality.png')
+	plotQualityProfile(fnFs[1:2])
+dev.off()
+png('pics/reverse_quality.png')
+	plotQualityProfile(fnRs[1:2])
+dev.off()
 
 # Create filtered files
-filt_path <- paste0(baseDir,"/dada2/filtered2")
+filt_path <- paste0(baseDir,"/filtered")
 filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
 
@@ -44,11 +49,14 @@ names(derepRs) <- sample.names
 
 # Learn Error Rates   - Might consider pooling for small sample sets (pool=T)
 errF <- learnErrors(filtFs, multithread=T, nreads=10000000)
-plotErrors(errF, nominalQ = T)
+png('pics/forward_error.png')
+	plotErrors(errF, nominalQ = T)
+dev.off()
 
 errR <- learnErrors(filtRs, multithread=T, nreads=10000000)
-plotErrors(errR, nominalQ = T)
-
+png('pics/reverse_error.png')
+	plotErrors(errR, nominalQ = T)
+dev.off()
 
 # Sample Inference
 # Maybe run again with pool=T when I've got a lot of extra time
@@ -62,13 +70,10 @@ mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE)
 
 # Construct Sequence Table
 seqtab <- makeSequenceTable(mergers)
-dim(seqtab)
 
-# Skip this step for now
 # Remove sequences that are inappropriatly sized
 table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% seq(401,438)]
-dim(seqtab2)
 #table(nchar(getSequences(seqtab2)))
 seqtab <- seqtab2
 
@@ -94,18 +99,50 @@ tidyTrack <- track %>% gather(Step, Count, input:nonchim)
 tidyTrack$Step <- factor(tidyTrack$Step, levels = c('input', 'filtered','denoised','merged','tabled','nonchim')) 
 head(tidyTrack)
 
+png('pics/filtering.png')
 ggplot(tidyTrack) + geom_line(aes(x=Step, y=Count, group=Sample, color=Sample))
+dev.off()
+
+seqtab <- seqtab.nochim
+saveRDS(seqtab, 'Data/seqtab.rds')
 
 
 
-# Assign Taxonomy   - If you want species, need to use RDP or Silva, not green genes
-taxa <- assignTaxonomy(seqtab.nochim, "~/genome/gg_13.8/gg_13_8_train_set_97.fa.gz", multithread = T)
 
-taxa.print <- taxa
-row.names(taxa.print) <- NULL
-head(taxa.print)
+doNewTaxonomy <- F
 
-#write.table(seqtab.nochim, file="test", sep="\t", col.names = NA, quote=F)
+# Assign Taxonomy  
+
+if (doNewTaxonomy) {   # Do the new taxonomy way
+
+	dna <- DNAStringSet(getSequences(seqtab)) # Create a DNAStringSet from the ASVs
+	#load("Data/RDP-10.28_SSU_rRNA_Reference_Database.sqlite") # CHANGE TO THE PATH OF YOUR TRAINING SET
+	data("TrainingSet_16S")
+	trainingSet <- TrainingSet_16S
+	ids <- IdTaxa(dna, trainingSet, strand="top", processors=20, verbose=FALSE) # use all processors
+	ranks <- c("domain", "phylum", "class", "order", "family", "genus", "species") # ranks of interest
+	# Convert the output object of class "Taxa" to a matrix analogous to the output from assignTaxonomy
+	taxid <- t(sapply(ids, function(x) {
+		m <- match(ranks, x$rank)
+		taxa <- x$taxon[m]
+		taxa[startsWith(taxa, "unclassified_")] <- NA
+		taxa
+	}))
+	colnames(taxid) <- ranks; rownames(taxid) <- getSequences(seqtab)
+	taxa <- taxid	
+
+		
+} else {    # Do original assign taxonomy
+		
+	taxa <- assignTaxonomy(seqtab, "~/genome/gg_13.8/gg_13_8_train_set_97.fa.gz", multithread = T)
+}
+
+
+saveRDS(taxa, 'Data/taxa.rds')
+
+
+
+
 
 # Make a phylogenetic tree Using phangorn
 library(phangorn)
@@ -130,32 +167,13 @@ detach("package:phangorn", unload=TRUE)
 
 # Some Extra
 library(phyloseq)
-#packageVersion("phyloseq")
-library(ggplot2)
 
 meta <- read.table('meta', header=T, sep="\t", stringsAsFactors = F)
 rownames(meta) <- meta$Sample
 
-# Issue making tree, try it without for the moment
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = F), sample_data(meta), tax_table(taxa),phy_tree(fitGTR$tree))
 
 #ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = F), sample_data(meta), tax_table(taxa))
 
-
-
 saveRDS(ps, file="data/PhyloseqObject.rds")
-save(ps, file="data/PS.Rdata")
 
-plot_richness(ps, x="Treatment", measures=c("Shannon", "Simpson"), color="Cage") + theme_bw()
-
-
-ord.nmds.bray <- ordinate(ps, method="NMDS", distance="bray")
-plot_ordination(ps, ord.nmds.bray, color="Cage", title="Bray NMDS")
-
-
-# Barplot
-top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
-ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
-ps.top20 <- prune_taxa(top20, ps.top20)
-plot_bar(ps.top20, x="SampleID", fill="Family") + facet_wrap(~Treatment, scales="free_x")+geom_bar(stat="identity")
-plot_bar(ps.top20, x="SampleID", fill="Phylum") + facet_wrap(~Condition, scales="free_x")+geom_bar(stat="identity")
