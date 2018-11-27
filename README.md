@@ -16,7 +16,7 @@ First, set up your directories. There should be sub directories called Data, fil
 * Look at the quality and change parameters in the filterAndTrim step
 * Make sure error rates look good. If not, change the filtering parameters
 * Set min and max length of merged sequence
-* Make sure the taxonomy files are in place, and you have pick old or new assign taxonomy
+* Make sure the taxonomy files are in place, and pick old or new assign taxonomy
 
 This will create a few QC figures, and save filtered files, seqtab, taxa, and ultimately a phyloseq object.
 
