@@ -1,4 +1,4 @@
-# WV_16S
+# 16S Analysis
 Templates for 16S analysis
 
 
