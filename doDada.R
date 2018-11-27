@@ -165,15 +165,13 @@ detach("package:phangorn", unload=TRUE)
 
 
 
-# Some Extra
+# Construct phyloseq object
 library(phyloseq)
 
 meta <- read.table('meta', header=T, sep="\t", stringsAsFactors = F)
 rownames(meta) <- meta$Sample
 
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = F), sample_data(meta), tax_table(taxa),phy_tree(fitGTR$tree))
-
-#ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows = F), sample_data(meta), tax_table(taxa))
 
 saveRDS(ps, file="data/PhyloseqObject.rds")
 
