@@ -7,14 +7,12 @@ library(tidyverse)
 library(gplots)
 library(ggrepel)
 
-setwd('~/projects/Anderson/Oct_2018')
-ps <- readRDS('data/Phyloseq_filtered.rds')
+setwd('~/')
+ps <- readRDS('Data/Phyloseq_filtered.rds')
 
-outDir <- "~/projects/Anderson/Oct_2018/deseq"
+outDir <- "/deseq"
 outPrefix <- 'Naive_Vehicle'
 
-#sample_data(ps)$Age_Day <- as.factor(sample_data(ps)$Age_Day)
-#names(sample_data(ps))[7] <- 'SurgeryType'
 
 psn <- subset_samples(ps, Treatment=='Naive' | Treatment=='Vehicle')
 
@@ -148,31 +146,4 @@ p <- plotPCA(vsd, intgroup=intGroup)
 p <- p + geom_text_repel(aes(x=PC1, y=PC2, label=colData(dds)$SampleID), point.padding = unit(2,"points"))
 print(p)
 dev.off()
-
-####  Volcano
-
-name <- paste(outDir, '/', outPrefix, '_volcano.png', sep="") 
-png(name)
-
-par(pch = 16)
-with(res, plot(log2FoldChange, -log10(pvalue), main = outPrefix))
-with(subset(res, padj < 0.05), points(log2FoldChange, -log10(pvalue), col = "red"))
-with(subset(res, abs(log2FoldChange) > 2), points(log2FoldChange, -log10(pvalue),  col = "orange"))
-
-with(subset(res, padj < 0.05 & abs(log2FoldChange) > 2), points(log2FoldChange,  -log10(pvalue), col = "green"))
-
-# Add legend
-legend("topleft", legend = c("FDR<0.05", "|LFC|>2", "both"), pch = 16, col = c("red", "orange", "green"))
-
-# Label Extra significant points
-#with(subset(res, padj < 0.05 & abs(log2FoldChange) > 2), textxy(log2FoldChange, -log10(pvalue), labs = Gene, cex = 1))
-
-# Label all significant
-#with(subset(res, padj < 0.05), textxy(log2FoldChange, -log10(pvalue), labs = Gene, cex = 1))
-
-dev.off()
-
-
-
-
 
