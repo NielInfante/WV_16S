@@ -3,18 +3,14 @@ library(ggplot2)
 library("gridExtra")
 library(dplyr)
 
-setwd('~/projects/Anderson')
+setwd('~/')
 
 # Play with shiny, if you like
 #install.packages("shiny")
 #shiny::runGitHub("shiny-phyloseq","joey711")
 
 # Load Data
-ps <- readRDS('data/PhyloseqObject.rds')
-
-
-
-
+ps <- readRDS('Data/PhyloseqObject.rds')
 
 
 # Refactor data - I want to put in more metadata  - Old, metadata in phyloseq should be good
@@ -173,146 +169,7 @@ plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 
 ps <-ps2
 
-saveRDS(ps, file='data/Phyloseq_filtered.rds')
-
-
-#qplot(sample_data(ps)$Experiment, geom = "histogram") + xlab("Experiment")
-#qplot(log10(rowSums(otu_table(ps)))) + xlab("Logged counts-per-sample")
-qplot((rowSums(otu_table(ps)))) + xlab("Logged counts-per-sample")
-
-pslog <- transform_sample_counts(ps, function(x) log(1 + x))
-#sample_data(pslog)$age_binned <- cut(sample_data(pslog)$Time), breaks = c(0, 100, 200, 400))
-out.wuf.log <- ordinate(pslog, method = "MDS", distance = "wunifrac")
-out.wuf.log <- ordinate(pslog, method = "MDS", distance = "bray")
-
-
-
-evals <- out.wuf.log$values$Eigenvalues
-plot_ordination(pslog, out.wuf.log, color = "Treatment", shape='Cage') +
-  labs(col = c('Sex',"Genotype")) +
-  coord_fixed(sqrt(evals[2] / evals[1])) + geom_point(size=3)
-
-evals <- out.wuf.log$values$Eigenvalues
-plot_ordination(pslog, out.wuf.log, color = "Treatment") +
-  labs(col = "Treatment") +
-  coord_fixed(sqrt(evals[2] / evals[1])) + geom_point(size=3)
-
-
-# PCoA
-
-out.bc.log <- ordinate(pslog, method = "MDS", distance = "bray")
-
-evals <- out.bc.log$values$Eigenvalues
-plot_ordination(pslog, out.bc.log, color = "Treatment", shape="Cage") +
-  coord_fixed(sqrt(evals[2] / evals[1])) +
-  labs(col = "Treatment", shape = "Cage") + geom_point(size=3)
-
-
-#DPCoA
-
-out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
-evals <- out.dpcoa.log$values$Eigenvalues
-plot_ordination(pslog, out.dpcoa.log, color = "Treatment", shape="Cage") +
-  coord_fixed(sqrt(evals[2] / evals[1])) +
-  labs(col = "Genotype", shape = "Tab")
-
-#? Not working
-
-
-out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
-evals <- out.wuf.log$values$Eigenvalues
-plot_ordination(pslog, out.wuf.log, color = "Treatment", shape="Cage") +
-  coord_fixed(sqrt(evals[2] / evals[1])) +
-  labs(col = "Treatment", shape = "Cage") + geom_point(size=3)
-
-
-# PCA on Ranks
-
-plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") +
-  coord_fixed(sqrt(evals[2] / evals[1]))
-
-evals <- out.wuf.log$values$Eigenvalues
-plot_ordination(pslog, out.wuf.log, color = "Experiment",
-                shape = "Time") +
-  coord_fixed(sqrt(evals[2] / evals[1])) +
-  labs(col = "Experiment", shape = "Time")
-
-plot_ordination(pslog, out.wuf.log, type = "species", color = "Phylum") +
-  coord_fixed(sqrt(evals[2] / evals[1]))
-
-abund <- otu_table(pslog)
-abund_ranks <- t(apply(abund, 1, rank))
-
-# Flatten the low end
-abund_ranks <- abund_ranks - 329
-abund_ranks[abund_ranks < 1] <- 1
-
-ranks_pca <- dudi.pca(abund_ranks, scannf = F, nf = 3)
-row_scores <- data.frame(li = ranks_pca$li,
-                         SampleID = rownames(abund_ranks))
-col_scores <- data.frame(co = ranks_pca$co,
-                         seq = colnames(abund_ranks))
-
-tax <- tax_table(ps)@.Data %>%
-  data.frame(stringsAsFactors = FALSE)
-tax$seq <- rownames(tax)
-
-main_orders <- c("Clostridiales", "Bacteroidales", "Lactobacillales",
-                 "Coriobacteriales")
-tax$Order[!(tax$Order %in% main_orders)] <- "Other"
-tax$Order <- factor(tax$Order, levels = c(main_orders, "Other"))
-tax$otu_id <- seq_len(ncol(otu_table(ps)))
-
-row_scores <- row_scores %>%
-  left_join(sample_data(pslog))
-col_scores <- col_scores %>%
-  left_join(tax)
-
-
-
-
-
-
-# Some quickies for my presentation
-
-
-psn <- subset_samples(ps,  Genotype=='WT' & (SurguryType != '.') & (SurguryType != 'N/A') & 
-												(Age_Day == 0 | Age_Day == 3) )
-
-
-
-
-pslog <- transform_sample_counts(ps, function(x) log(1 + x))
-
-out.bc.log <- ordinate(pslog, method = "MDS", distance = "bray")
-
-evals <- out.bc.log$values$Eigenvalues
-plot_ordination(pslog, out.bc.log, color = "Genotype", shape="Sex") +
-	coord_fixed(sqrt(evals[2] / evals[1])) +
-	labs(col = "Genotype", shape = "Sex")
-
-png('pics/all_PCA.png')
-dev.off()
-
-
-
-png('pics/WT_Alpha.png')
-#plot_richness(psn, x="SurguryType", measures=c("Shannon", "Simpson"), color="Age_Day") + theme_bw()
-plot_richness(psn, x="SurguryType", measures=c("Shannon", "Simpson")) + theme_bw() + labs(title="WT at Zero or Three Days")
-dev.off()
-
-plot_richness(ps, x="interaction(SurguryType,Age_Day)", measures=c("Shannon", "Simpson"), color="Genotype") + 
-			theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-
-psra = transform_sample_counts(psn, function(x){x / sum(x)})
-
-png('pics/T3_bar.png', width=1200, height=1000)
-plot_bar(psra, fill="Phylum") + geom_bar(stat="identity")
-dev.off()
-
-
+saveRDS(ps, file='Data/Phyloseq_filtered.rds')
 
 
 
