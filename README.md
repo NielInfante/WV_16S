@@ -6,7 +6,7 @@ These are a series of R scripts to help with 16S analysis using Dada2. These are
 
 ## Order
 
-First, set up your directories. There should be sub directories called Data, filtered, and pics. In Data there should be the trained taxonomic data.
+First, set up your directories. There should be sub directories called Data, filtered, deseq, vegan, and pics. In Data there should be the trained taxonomic data.
 
 ### Start with doDada.R
 
