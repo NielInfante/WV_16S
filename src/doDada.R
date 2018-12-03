@@ -8,8 +8,8 @@ setwd(baseDir)
 
 # List of where the files are
 
-fnFs <- sort(list.files('~/projects/Anderson/outdir/noN', pattern="_R1.fastq.gz", full.names = TRUE))
-fnRs <- sort(list.files('~/projects/Anderson/outdir/noN', pattern="_R2.fastq.gz", full.names = TRUE))
+fnFs <- sort(list.files('~/', pattern="_R1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files('~/', pattern="_R2.fastq.gz", full.names = TRUE))
 
 
 # Read the meta
@@ -21,7 +21,7 @@ plotQualityProfile(fnFs[1:2])
 plotQualityProfile(fnRs[1:2])
 
 # Create filtered files
-filt_path <- paste0(baseDir,"/dada2/filtered2")
+filt_path <- paste0(baseDir,"/filtered")
 filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
 
@@ -43,12 +43,15 @@ names(derepRs) <- sample.names
 
 
 # Learn Error Rates   - Might consider pooling for small sample sets (pool=T)
-errF <- learnErrors(filtFs, multithread=T, nreads=10000000)
-plotErrors(errF, nominalQ = T)
+errF <- learnErrors(filtFs, multithread=T)
+png('pics/error_F.png')
+	plotErrors(errF, nominalQ = T)
+dev.off()
 
-errR <- learnErrors(filtRs, multithread=T, nreads=10000000)
-plotErrors(errR, nominalQ = T)
-
+errR <- learnErrors(filtRs, multithread=T)
+png('pics/error_R.png')
+	plotErrors(errR, nominalQ = T)
+dev.off()
 
 # Sample Inference
 # Maybe run again with pool=T when I've got a lot of extra time
@@ -64,7 +67,8 @@ mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE)
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 
-# Skip this step for now
+saveRDS(seqtab, 'Data/seqtab_before_sizing.rds')
+
 # Remove sequences that are inappropriatly sized
 table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% seq(401,438)]
@@ -94,9 +98,12 @@ tidyTrack <- track %>% gather(Step, Count, input:nonchim)
 tidyTrack$Step <- factor(tidyTrack$Step, levels = c('input', 'filtered','denoised','merged','tabled','nonchim')) 
 head(tidyTrack)
 
-ggplot(tidyTrack) + geom_line(aes(x=Step, y=Count, group=Sample, color=Sample))
+png('pics/filtering.png', width=1400, height=1000)
+	ggplot(tidyTrack) + geom_line(aes(x=Step, y=Count, group=Sample, color=Sample))
+dev.off()
 
-
+seqtab <- seqtab.nochim
+saveRDS(seqtab, file='Data/seqtab.rds')
 
 # Assign Taxonomy   - If you want species, need to use RDP or Silva, not green genes
 taxa <- assignTaxonomy(seqtab.nochim, "~/genome/gg_13.8/gg_13_8_train_set_97.fa.gz", multithread = T)
