@@ -14,8 +14,6 @@ First, set up your directories. There should be sub directories called Data, fil
 * There should be a file called meta that contains the meta data
 * You may need to do a bit of work to get the meta data to agree with the file names
 * Look at the quality and change parameters in the filterAndTrim step
-  * jjk
-  * kkdih
 * Make sure error rates look good. If not, change the filtering parameters
 * Set min and max length of merged sequence
 * Make sure the taxonomy files are in place, and pick old or new assign taxonomy
