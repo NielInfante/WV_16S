@@ -83,9 +83,20 @@ Beta diversity measures the distance between two samples. Some beta measures are
 I generally do not return a matrix of distances, but I can if you like. 
 What I do is use the distances calculated to do ordinations and to calculate differences between groups. 
 <h4>Vegan Plots</h4>
-These are produced by the R package vegan
+These are produced by the R package vegan, and show if two groups of samples are different based on a particular distance metric.
+
+<img src='images/vegan1.png' alt='vegan image'>
 
 
+
+<h3>Ordinations</h3>
+Lots of different ordinations are available. I gennerally just do a PCoA based on a couple of different metrics.
+
+<h3>Differential Analysis</h3>
+16S sequencing produces count data, so it is entirely reasonable to use tools built for RNA-seq to determine if there are individual taxa which are significantly different between groups. Specifically, I use DESeq2. You can find information on the DESeq output <a href="https://nielinfante.github.io/RNAseq/">here.</a> 
+One extra figure I produce for 16S DESeq analysis is an overview, which shows a quick image of significantly different taxa.
+
+<img src='images/deseq_overview.png' alt='overview'>
 
 
 
