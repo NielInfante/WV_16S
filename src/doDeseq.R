@@ -10,7 +10,7 @@ library(ggrepel)
 setwd('~/')
 ps <- readRDS('Data/Phyloseq_filtered.rds')
 
-outDir <- "/deseq"
+outDir <- "deseq"
 outPrefix <- 'Naive_Vehicle'
 
 
@@ -42,12 +42,11 @@ dds = DESeq(dds, fitType="local")
 # Moving on
 
 res <- results(dds, contrast=contrast)
+res = cbind(as(res, "data.frame"), as(tax_table(psn)[rownames(res), ], "matrix"))
+res <- res[order(res$padj, decreasing = F),]
 sigtab <- res[which(res$padj < 0.05),]
-sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(psn)[rownames(sigtab), ], "matrix"))
-sigtab <- sigtab[order(sigtab$padj, decreasing = F),]
 head(sigtab)
 names(sigtab)
-
 
 theme_set(theme_bw())
 scale_fill_discrete <- function(palname = "Set1", ...) {
@@ -78,6 +77,9 @@ dev.off()
 #ggplot(sigtab, aes(x=Family, y=log2FoldChange, color=Phylum)) + geom_point(size=4) + 
 #	theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust=0.5, size=15))
 
+
+name <- paste(outDir, '/', outPrefix, '_results.txt', sep="") 
+write.table(res, file=name, sep="\t", quote=F, row.names=F)
 
 
 name <- paste(outDir, '/', outPrefix, '_significant.txt', sep="") 
