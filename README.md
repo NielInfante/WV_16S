@@ -40,9 +40,8 @@ Output a filtered phyloseq object
 
 Outputs many pictures, and a list of significantly different taxa
 
-### :x: <!--:large_orange_diamond: :white_check_mark:--> Do Beta diversity with doVeganBeta.R
+### :x: <!--:large_orange_diamond: :white_check_mark:--> Do Beta diversity NMDS_With_Ellipse.R
 
 ### :x: <!--:large_orange_diamond: :white_check_mark:--> Do Alpha analysis with doAlpha.R
 
 ### :x: <!--:large_orange_diamond: :white_check_mark:--> Make pretty pictures with drawPics.R
-
