@@ -51,9 +51,11 @@ prevdf = data.frame(Prevalence = prevdf,
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 # or
 
-myPrev <- prevdf %>% group_by(Phylum) %>% summarize(n=n(),sum=sum(Prevalence),mean=mean(Prevalence),max=max(Prevalence))
+myPrev <- prevdf %>% group_by(Phylum) %>% summarize(n=n(),sum=sum(Prevalence),
+																										mean=mean(Prevalence),
+																										max=max(Prevalence),
+																										totAbund=sum(TotalAbundance))
 myPrev %>% print(n=100)
-
 # If so, filter them out
 # Define phyla to filter
 filterPhyla <- myPrev %>% filter(max <= 3) %>% select(Phylum)
